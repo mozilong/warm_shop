@@ -1,17 +1,23 @@
-# ===================== Django 核心框架依赖 =====================
+# Django核心框架
 Django==3.2.23
+
+# 数据库驱动（替代mysqlclient，无需编译）
+PyMySQL==1.1.0
+
+# DRF接口框架
 djangorestframework==3.14.0
+
+# JWT认证
 djangorestframework-simplejwt==5.2.2
 
-# ===================== 服务器依赖 =====================
+# 跨域处理
+django-cors-headers==4.3.0
+
+# 登录失败限制
+django-axes==6.2.0
+
+# 图片处理（头像/商品图片上传）
+Pillow==10.1.0
+
+# 生产环境部署
 gunicorn==21.2.0
-
-# ===================== 数据库依赖 =====================
-mysqlclient==2.2.0
-
-# ===================== 辅助功能依赖 =====================
-PyJWT==2.8.0
-python-dotenv==1.0.0
-django-cors-headers==4.2.0
-django-axes==5.34.0
-Pillow==10.0.1
