@@ -8,8 +8,12 @@ from pathlib import Path
 
 # ===================== 兼容 PyMySQL（替换 mysqlclient 时启用） =====================
 import pymysql
+# 模拟mysqlclient
 pymysql.install_as_MySQLdb()
-
+# 移除不兼容的foreign_key_checks参数（加固：先判断是否存在再删除）
+conn_init = pymysql.connections.Connection.__init__
+if hasattr(conn_init, '__kwdefaults__') and 'foreign_key_checks' in conn_init.__kwdefaults__:
+    del conn_init.__kwdefaults__['foreign_key_checks']
 # ===================== 基础路径配置 =====================
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -90,12 +94,12 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', '3306'),
         'OPTIONS': {
             'charset': 'utf8mb4',  # 支持emoji等特殊字符
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'; SET FOREIGN_KEY_CHECKS=0;",
-            'foreign_key_checks': False,
+            # 关键修复：移除多语句，仅保留sql_mode配置（pymysql不支持init_command多语句）
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            # 完全删除 foreign_key_checks 相关配置
         },
     }
 }
-
 # ===================== 密码验证规则 =====================
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -166,11 +170,13 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG  # 调试模式允许所有跨域，生产环境�
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
 CORS_ALLOW_HEADERS = ['*']
-
 # ===================== Django-Axes配置 =====================
 AXES_ENABLED = True
-AXES_FAILURE_LIMIT = 5
-AXES_COOLOFF_TIME = 1
-AXES_USE_USER_AGENT = True
-AXES_USE_IP_ADDRESS = True
-AXES_RESET_ON_SUCCESS = True
+AXES_FAILURE_LIMIT = 5  # 登录失败5次锁定
+AXES_COOLOFF_TIME = 1   # 锁定1小时（单位：小时）
+AXES_RESET_ON_SUCCESS = True  # 登录成功后重置失败次数
+# 新版Axes核心配置（替代所有废弃项）
+AXES_LOCKOUT_CALLABLE = None  # 自定义锁定逻辑（可选）
+AXES_USE_CACHE = True         # 使用缓存存储失败记录（默认True）
+AXES_CACHE_PREFIX = 'axes:'   # 缓存前缀
+# 完全删除以下废弃项：AXES_USE_USER_AGENT、AXES_USE_IP_ADDRESS、AXES_META_PRECEDENCE_ORDER、AXES_ONLY_USER_FAILURES
