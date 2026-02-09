@@ -1,115 +1,164 @@
 # warm_shop
-轻量级前后端分离电商系统，支持商品管理、购物车、订单流转、支付对接、用户/系统管理等核心电商能力，适配中小商家快速搭建线上商城。
-
+轻量级前后端分离电商后端系统，基于 Django + DRF 开发，适配中小商家快速搭建线上商城，支持自定义用户体系、商品管理、购物车、订单、支付对接等核心电商能力，兼顾开发效率与生产环境适配性。
 ## 技术栈
-- 前端：Vue3 + Vite + Element Plus
-- 后端：Python 3.9 + Django 4.2（替换为项目实际后端技术）
-- 数据库：MySQL 8.0
-- 中间件：Redis 6.0（缓存购物车/用户登录态）
-- 支付对接：微信支付 v3 / 支付宝当面付（替换为实际对接方式）
-
-## 快速启动（开发者本地部署）
+### 核心技术
+后端框架：Django 3.2 + Django REST Framework (DRF) 3.14
+认证机制：JWT (djangorestframework-simplejwt)
+数据库：MySQL 5.7+/8.0+（PyMySQL 驱动，兼容 utf8mb4）
+安全防护：登录失败限制 (django-axes)、跨域处理 (django-cors-headers)
+媒体处理：Pillow（头像 / 商品图片上传）
+部署适配：Gunicorn（WSGI 服务器）
 ### 环境要求
-- 基础环境：Git、Node.js ≥16.x、Python ≥3.9（或JDK≥1.8）
-- 数据库：MySQL ≥8.0、Redis ≥6.0
-
-### 步骤1：克隆仓库
+Python：3.8+（推荐 3.9）
+MySQL：5.7+/8.0+
+操作系统：Linux/macOS/Windows（推荐 Linux 生产环境）
+依赖管理：pip（推荐虚拟环境 venv/conda）
+## 快速启动（开发者本地部署）
+### 1. 克隆仓库
 ```bash
-git clone [项目仓库地址，如https://github.com/xxx/warm_shop.git]
+git clone https://github.com/mozilong/warm_shop.git
 cd warm_shop
 ```
-### 步骤 2：数据库初始化
+### 2. 搭建虚拟环境（推荐）
 ```bash
-# 1. 本地启动MySQL，创建空数据库（名称：warm_shop）
-mysql -u root -p
-CREATE DATABASE IF NOT EXISTS warm_shop DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE warm_shop;
+# 创建虚拟环境
+python -m venv venv
 
-# 2. 执行初始化脚本
-source sql/init_db.sql;
-# （可选）执行测试数据脚本（如有）
-source sql/test_data.sql;
+# 激活虚拟环境
+# Linux/macOS
+source venv/bin/activate
+# Windows
+venv\Scripts\activate
 ```
-### 步骤 3：后端启动
+### 3. 安装后端依赖
 ```bash
 cd backend
-# 安装后端依赖
-pip install -r requirements.txt（或mvn install，根据后端技术调整）
-
-# 修改配置文件（数据库/Redis/支付密钥）
-# 路径：backend/settings.py（替换为实际配置文件）
-# 需修改：数据库地址/账号/密码、Redis地址、支付对接密钥
-
-# 启动后端服务
-python manage.py runserver 0.0.0.0:8000（或java -jar warm_shop.jar，根据技术调整）
-# 验证：访问 http://localhost:8000/api/health 查看是否启动成功
+pip install -r ../requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
-步骤 4：前端启动
+### 4. 数据库初始化
 ```bash
-cd frontend
-# 安装前端依赖
-npm install
-# （可选）解决依赖安装失败：npm install --registry=https://registry.npm.taobao.org
+# 1. 登录 MySQL（输入 root 密码）
+mysql -uroot -p
 
-# 修改环境配置（后端接口地址）
-# 路径：frontend/.env.development
-# 需修改：VITE_API_BASE_URL = 'http://localhost:8000/api'
+# 2. 创建数据库（指定 utf8mb4 编码，兼容特殊字符）
+CREATE DATABASE IF NOT EXISTS warm_shop DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-# 启动前端开发服务
-npm run dev
+# 3. 授权用户（替换密码为自定义值）
+GRANT ALL PRIVILEGES ON warm_shop.* TO 'warm_shop_user'@'%' IDENTIFIED BY 'ShopUser123!';
+FLUSH PRIVILEGES;
+EXIT;
 ```
-验证：访问 http://localhost:5173（Vite默认端口）查看前端页面是否加载
-
-### 阶段3：格式规范+电商场景适配
-#### 任务1：统一 Markdown 格式规范
-- 标题层级：一级 `#`（仅项目名称）、二级 `##`（核心模块）、三级 `###`（子步骤），禁止层级混乱；
-- 代码块：所有命令/代码片段必须用 ``` 包裹，标注语言（bash/python/js）；
-- 列表：步骤用数字列表，选项用 `-` 无序列表，禁止混用。
-
-#### 任务2：补充电商场景特色模块
+### 5. 配置项目参数（可选）
+修改 backend/warm_shop/settings.py 中的核心配置（支持环境变量，生产环境推荐用环境变量）：
+```bash
+# Linux/macOS 临时环境变量（示例）
+export DB_NAME=warm_shop
+export DB_USER=warm_shop_user
+export DB_PASSWORD=你的自定义密码
+export DB_HOST=localhost
+export DB_PORT=3306
+export DJANGO_DEBUG=False  # 生产环境设为 False
+export DJANGO_SECRET_KEY=你的随机密钥  # 推荐用 django-admin startproject 生成
 ```
-## 核心业务模块说明
-| 模块目录 | 模块功能 | 核心接口示例（可选） |
-|----------|----------|----------------------|
-| backend/goods | 商品管理（新增/编辑/上下架/库存） | GET /api/goods/list（商品列表）、POST /api/goods/save（新增商品） |
-| backend/carts | 购物车（增删改查/数量调整） | POST /api/carts/add（加入购物车）、DELETE /api/carts/delete（删除购物车商品） |
-| backend/orders | 订单管理（下单/取消/物流更新） | POST /api/orders/create（创建订单）、GET /api/orders/detail/{orderId}（订单详情） |
-| backend/payment | 支付对接（回调/状态同步） | POST /api/payment/wechat/callback（微信支付回调） |
-| backend/users | 用户管理（注册/登录/权限） | POST /api/users/login（登录）、GET /api/users/info（用户信息） |
-| backend/system | 系统配置（参数/日志） | GET /api/system/config（系统配置） |
-```
+### 6. 数据库迁移（创建表结构）
+```bash
+cd backend
+# 优先生成用户模块迁移（解决外键依赖）
+python manage.py makemigrations users
+# 生成其他模块迁移
+python manage.py makemigrations
+# 执行迁移（创建表）
+python manage.py migrate
 
+# 创建超级管理员（用于后台管理）
+python manage.py createsuperuser
+# 按提示输入用户名、邮箱、密码
+```
+### 7. 启动开发服务器
+```bash
+# 允许所有IP访问，端口 8000
+python manage.py runserver 0.0.0.0:8000
+```
+### 8. 验证启动结果
+首页：访问 http://你的IP:8000/，可见暖心商城首页
+后台管理：访问 http://你的IP:8000/admin/，用超级管理员账号登录
+接口健康检查：访问 http://你的IP:8000/admin/goods/goods/，可见商品管理页面
+核心业务模块说明
+表格
+模块目录	核心功能	扩展方向
+backend/users	自定义用户模型（手机号 / 头像扩展）、权限管理、JWT 认证	短信验证、第三方登录
+backend/goods	商品基础管理（名称 / 价格 / 库存 / 状态）、商品列表 / 详情	分类 / 标签、商品搜索、库存锁
+backend/carts	空骨架（待扩展）	购物车增删改查、库存预扣减
+backend/orders	空骨架（待扩展）	订单创建 / 取消、物流状态同步
+backend/payment	空骨架（待扩展）	微信 / 支付宝支付对接、回调处理
 ## 关键配置说明
-### 1. 支付配置（核心）
-- 文件路径：backend/settings.py（或 backend/config/payment.py）
-- 需配置项：
-  - 微信支付：appid、mchid、api_v3_key、回调地址
-  - 支付宝：app_id、private_key、alipay_public_key、回调地址
-### 2. 跨域配置
-- 文件路径：backend/settings.py（Django）/ frontend/vite.config.js
-- 前端需允许跨域访问后端接口，后端需配置允许前端域名跨域。
+### 1. 核心配置文件
+表格
+文件路径	关键配置项
+backend/warm_shop/settings.py	自定义用户模型：AUTH_USER_MODEL = 'users.User'
+数据库配置：DATABASES（MySQL 连接信息）
+跨域配置：CORS_ALLOW_ALL_ORIGINS（开发环境 True，生产环境需指定域名）
+JWT 配置：SIMPLE_JWT（令牌有效期、加密算法）
+媒体文件：MEDIA_ROOT/MEDIA_URL（头像 / 商品图片存储路径）
+backend/warm_shop/urls.py	路由配置：首页、后台管理、媒体文件访问
+### 2. 生产环境关键调整
+```python
+# settings.py 生产环境配置示例
+DEBUG = False
+ALLOWED_HOSTS = ['www.warmshop.com', 'api.warmshop.com']  # 指定允许的域名
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')  # 从环境变量获取密钥
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = ['https://www.warmshop.com']  # 仅允许前端域名跨域
 
-## 常见问题（FAQ）
-1. 前端启动后接口报403？→ 检查后端跨域配置是否包含前端域名；
-2. 支付回调无响应？→ 检查回调地址是否公网可访问、密钥是否匹配；
-3. 商品库存扣减异常？→ 检查订单创建时的库存锁机制是否生效；
-阶段 4：协作维护补充
-## 贡献指南
-### 1. 分支规范
-- master/main：生产环境分支，仅合并经过测试的release分支；
-- develop：开发主分支，所有功能分支基于此创建；
-- feature/xxx：功能分支（如feature/goods-stock），用于开发新功能；
-- bugfix/xxx：bug修复分支（如bugfix/order-pay-fail）；
-### 2. 提交规范
-```bash
-# 提交格式：type(模块): 描述
-# type可选：feat(新增功能)、fix(修复bug)、docs(文档修改)、style(格式调整)、refactor(重构)
-git commit -m "feat(carts): 新增购物车商品数量限制功能"
+# 收集静态文件（admin 静态资源）
+python manage.py collectstatic
 ```
-3. PR 流程
-Fork 仓库（外部贡献者）/ 创建功能分支（内部开发者）；
-开发完成后提交代码，确保单元测试通过；
-提 PR 至 develop 分支，指定至少 1 名审核人；
-审核通过后合并，删除功能分支。
-许可证
-本项目采用 MIT 许可证 开源（若为内部项目，可改为 “本项目为企业内部项目，未经授权禁止商用 / 传播”）
+### 3. 部署建议（生产环境）
+```bash
+# 使用 Gunicorn 启动 WSGI 服务
+gunicorn warm_shop.wsgi:application --bind 0.0.0.0:8000 --workers 4
+# 配合 Nginx 反向代理（处理静态文件、负载均衡）
+```
+## 常见问题（FAQ）
+Q1: 执行 migrate 报错 Cannot add foreign key constraint？
+原因：自定义用户模型迁移未优先执行，导致外键依赖失败；
+解决方案：重置数据库 → 清理迁移文件 → 先执行 makemigrations users 再执行其他迁移（详见 README 末尾「兜底方案」）。
+Q2: 访问 8000 端口显示 404？
+原因：根路径未配置路由；
+解决方案：确认 backend/warm_shop/urls.py 中已添加首页路由 path('', home, name='home')。
+Q3: 启动服务时报 AxesWarning: axes.W003？
+原因：未配置 Axes 认证后端；
+解决方案：确认 settings.py 中 AUTHENTICATION_BACKENDS 包含 axes.backends.AxesBackend。
+Q4: 上传头像 / 商品图片后无法访问？
+原因：媒体文件路由未配置；
+解决方案：确认 urls.py 中已添加 static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)。
+兜底方案（重置数据库）
+若迁移过程中出现复杂错误，可重置数据库重新开始：
+```bash
+# 1. 删除数据库
+mysql -uroot -p -e "DROP DATABASE IF EXISTS warm_shop; CREATE DATABASE warm_shop DEFAULT CHARSET utf8mb4;"
+
+# 2. 清理迁移文件
+cd backend
+find . -path "*/migrations/*.py" -not -name "__init__.py" -delete
+
+# 3. 重新迁移
+python manage.py makemigrations users
+python manage.py makemigrations
+python manage.py migrate
+```
+
+# 更新日志
+v1.0.0（2026-02）
+初始版本，完成核心功能：
+自定义用户模型（手机号 / 头像扩展），解决与 Django 内置 User 冲突；
+商品基础模型（名称 / 价格 / 库存 / 状态）；
+首页与后台管理路由配置；
+DRF + JWT 认证、跨域、登录限制等基础配置；
+修复关键问题：迁移外键冲突、Axes 警告、首页 404 等。
+待迭代功能
+购物车模块：增删改查、库存预扣减；
+订单模块：订单创建 / 取消、物流轨迹对接；
+支付模块：微信 / 支付宝支付对接、回调处理；
+商品模块：分类 / 标签、搜索、图片多图上传；
+接口文档：集成 drf-spectacular 生成 OpenAPI 文档。
