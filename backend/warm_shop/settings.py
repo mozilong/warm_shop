@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+import pymysql
+pymysql.install_as_MySQLdb()
 
 # 项目根目录
 BASE_DIR = Path(__file__).resolve().parent.parent
