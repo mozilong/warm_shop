@@ -1,10 +1,5 @@
-
----
-
-## 二、backend 目录文件
-### 1. manage.py
-```python
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-  
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
@@ -12,7 +7,7 @@ import sys
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'warm_shop.settings')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.warm_shop.settings')  # 注意：settings路径需匹配项目实际（若你的settings在warm_shop/settings.py，改为'warm_shop.settings'）
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
