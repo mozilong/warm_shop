@@ -1,0 +1,42 @@
+<!-- backend/templates/home.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <style>
+        body {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .header {
+            text-align: center;
+            padding: 50px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .nav {
+            margin: 20px 0;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        .nav a {
+            text-decoration: none;
+            color: #007bff;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ message }}</h1>
+    </div>
+    <div class="nav">
+        <a href="/admin">后台管理</a>
+        <a href="/api/goods">商品接口</a>
+    </div>
+</body>
+</html>
