@@ -65,9 +65,8 @@ export DJANGO_SECRET_KEY=你的随机密钥  # 推荐用 django-admin startproje
 ```
 ### 6. 数据库迁移（创建表结构）
 ```bash
-#临时添加项目根目录到PYTHONPATH
 export PYTHONPATH=/root/warm_shop:$PYTHONPATH
-
+#临时添加项目根目录到PYTHONPATH
 cd backend
 # 优先生成用户模块迁移（解决外键依赖）
 python manage.py makemigrations users
