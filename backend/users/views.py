@@ -1,59 +1,59 @@
-from rest_framework import viewsets, status
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework_simplejwt.views import TokenObtainPairView
+from django.shortcuts import render, redirect, HttpResponse
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.contrib import messages
+from .forms import RegisterForm, LoginForm  # 现在能正常导入
 from .models import User
-from .serializers import UserRegisterSerializer, UserSerializer
 
-class UserRegisterViewSet(viewsets.GenericViewSet):
-    """用户注册视图"""
-    queryset = User.objects.all()
-    serializer_class = UserRegisterSerializer
-    permission_classes = [AllowAny]
+# 注册视图
+def register(request):
+    if request.method == 'POST':
+        form = RegisterForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '注册成功！请登录')
+            return redirect('login')
+        else:
+            return render(request, 'register.html', {'form': form})
+    else:
+        form = RegisterForm()
+    return render(request, 'register.html', {'form': form})
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        return Response({
-            'code': 201,
-            'message': '注册成功',
-            'data': {
-                'id': user.id,
-                'username': user.username,
-                'phone': user.phone
-            }
-        }, status=status.HTTP_201_CREATED)
+# 登录视图（重命名为user_login，避免和内置login冲突）
+def user_login(request):
+    if request.method == 'POST':
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            # 尝试通过用户名/手机号登录
+            try:
+                if username.isdigit() and len(username) == 11:
+                    user = User.objects.get(phone=username)
+                else:
+                    user = User.objects.get(username=username)
+                user = authenticate(request, username=user.username, password=password)
+            except User.DoesNotExist:
+                user = None
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    """用户信息视图"""
-    serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+            if user is not None:
+                auth_login(request, user)  # 使用Django内置登录
+                messages.success(request, '登录成功！')
+                return redirect('home')
+            else:
+                messages.error(request, '密码错误！')
+        return render(request, 'login.html', {'form': form})
+    else:
+        form = LoginForm()
+    return render(request, 'login.html', {'form': form})
 
-    def get_queryset(self):
-        return User.objects.filter(id=self.request.user.id)
+# 退出登录
+def user_logout(request):
+    auth_logout(request)
+    messages.success(request, '已退出登录！')
+    return redirect('home')
 
-    def update(self, request, *args, **kwargs):
-        """更新个人信息"""
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response({
-            'code': 200,
-            'message': '更新成功',
-            'data': serializer.data
-        })
-
-# 自定义登录视图
-class CustomTokenObtainPairView(TokenObtainPairView):
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == 200:
-            response.data = {
-                'code': 200,
-                'message': '登录成功',
-                'data': response.data
-            }
-        return response
+# 个人中心
+def profile(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    return render(request, 'profile.html', {'user': request.user})

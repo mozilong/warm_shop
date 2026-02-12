@@ -1,50 +1,47 @@
-from rest_framework import viewsets, filters
-from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
-from django_filters.rest_framework import DjangoFilterBackend
-from .models import Category, Tag, Goods
-from .serializers import CategorySerializer, TagSerializer, GoodsListSerializer, GoodsDetailSerializer
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import Goods
 
-class CategoryViewSet(viewsets.ModelViewSet):
-    """分类视图集"""
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
-    
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [AllowAny()]
-        return [IsAdminUser()]
+@login_required
+def goods_off_shelf(request, goods_id):
+    """商品下架视图（管理员/超级管理员/商户都可执行）"""
+    goods = get_object_or_404(Goods, id=goods_id)
+    user = request.user
 
-class TagViewSet(viewsets.ModelViewSet):
-    """标签视图集"""
-    queryset = Tag.objects.all()
-    serializer_class = TagSerializer
-    
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [AllowAny()]
-        return [IsAdminUser()]
+    # 权限校验
+    if user.role == 'merchant' and goods.merchant != user:
+        messages.error(request, '你只能下架自己的商品！')
+        return redirect('admin:goods_goods_changelist')
+    elif user.role in ['admin', 'super_admin']:
+        pass
+    elif user.role != 'merchant':
+        messages.error(request, '无权限下架商品！')
+        return redirect('admin:goods_goods_changelist')
 
-class GoodsViewSet(viewsets.ModelViewSet):
-    """商品视图集"""
-    queryset = Goods.objects.filter(is_active=True)
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['category', 'is_active']
-    search_fields = ['name', 'description']
-    ordering_fields = ['price', 'sales', 'created_at']
+    # 执行下架
+    goods.status = 'OFF_SALE'
+    goods.save()
+    messages.success(request, f'商品「{goods.name}」已下架！')
+    return redirect('admin:goods_goods_changelist')
+
+@login_required
+def goods_on_shelf(request, goods_id):
+    """商品上架视图（仅商户可执行）"""
+    goods = get_object_or_404(Goods, id=goods_id)
+    user = request.user
+
+    # 仅商户可上架自己的商品
+    if user.role != 'merchant' or goods.merchant != user:
+        messages.error(request, '仅商户可上架自己的商品！')
+        return redirect('admin:goods_goods_changelist')
+
+    # 执行上架（库存>0才允许）
+    if goods.stock <= 0:
+        messages.error(request, '库存为0，无法上架商品！')
+        return redirect('admin:goods_goods_changelist')
     
-    def get_serializer_class(self):
-        if self.action == 'list':
-            return GoodsListSerializer
-        return GoodsDetailSerializer
-    
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [AllowAny()]
-        return [IsAdminUser()]
-    
-    def get_queryset(self):
-        queryset = Goods.objects.all()
-        # 普通用户只能看到上架商品
-        if not (self.request.user.is_authenticated and self.request.user.is_staff):
-            queryset = queryset.filter(is_active=True)
-        return queryset
+    goods.status = 'ON_SALE'
+    goods.save()
+    messages.success(request, f'商品「{goods.name}」已上架！')
+    return redirect('admin:goods_goods_changelist')

@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'rest_framework',            # DRF 接口框架
     'rest_framework_simplejwt',  # JWT 认证
     'corsheaders',               # 跨域处理
-    'axes',                      # 登录失败限制
+    #'axes',                      # 登录失败限制
     
     # 自定义应用
     'goods',   # 商品模块
@@ -55,11 +55,11 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',  # 跨域中间件（需放在CommonMiddleware前）
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'axes.middleware.AxesMiddleware',  # Axes登录限制中间件
+    #'axes.middleware.AxesMiddleware',  # Axes登录限制中间件
 ]
 
 ROOT_URLCONF = 'warm_shop.urls'
@@ -126,7 +126,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ===================== 认证后端配置（解决Axes警告） =====================
 AUTHENTICATION_BACKENDS = [
-    'axes.backends.AxesBackend',
+    #'axes.backends.AxesBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
@@ -165,11 +165,36 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
 }
 
-# ===================== CORS跨域配置 =====================
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # 调试模式允许所有跨域，生产环境关闭
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
-CORS_ALLOW_HEADERS = ['*']
+# ===================== CORS跨域配置（优化版） =====================
+# 开发环境：允许所有源；生产环境：仅允许指定的可信源（通过环境变量配置）
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # 调试模式下允许所有跨域（方便开发）
+# 生产环境指定允许的源（通过环境变量 CORS_ALLOWED_ORIGINS 配置，多个用逗号分隔）
+CORS_ALLOWED_ORIGINS = []
+if not DEBUG:
+    allowed_origins = os.getenv('CORS_ALLOWED_ORIGINS', '')
+    if allowed_origins:
+        CORS_ALLOWED_ORIGINS = allowed_origins.split(',')
+        # 生产环境强制关闭全量跨域（防止环境变量配置错误导致安全风险）
+        CORS_ALLOW_ALL_ORIGINS = False
+
+# 通用跨域安全配置
+CORS_ALLOW_CREDENTIALS = True  # 允许携带cookie
+CORS_ALLOW_METHODS = [
+    'GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'
+]  # 明确允许的HTTP方法（避免通配符）
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]  # 明确允许的请求头（替代通配符，提升安全性）
+CORS_PREFLIGHT_MAX_AGE = 86400  # 预检请求缓存时间（1天），减少OPTIONS请求次数
+
 # ===================== Django-Axes配置 =====================
 AXES_ENABLED = True
 AXES_FAILURE_LIMIT = 5  # 登录失败5次锁定

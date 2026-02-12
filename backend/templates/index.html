@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>暖心商城首页</title>
+    <style>
+        body { font-family: "微软雅黑"; text-align: center; padding: 50px; }
+        h1 { color: #e91e63; }
+        .goods-list { margin-top: 30px; display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
+        .goods-item { border: 1px solid #eee; padding: 20px; width: 200px; }
+    </style>
+</head>
+<body>
+    <h1>暖心商城</h1>
+    <div class="goods-list">
+        {% for goods in goods_list %}
+        <div class="goods-item">
+            <h3>{{ goods.name }}</h3>
+            <p>价格：{{ goods.price }}元</p>
+            <p>库存：{{ goods.stock }}</p>
+            {% if goods.status == 'ON_SALE' %}
+            <p style="color: green;">已上架</p>
+            {% else %}
+            <p style="color: red;">已下架</p>
+            {% endif %}
+        </div>
+        {% empty %}
+        <p>暂无商品</p>
+        {% endfor %}
+    </div>
+</body>
+</html>

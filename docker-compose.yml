@@ -1,0 +1,73 @@
+# 移除过时的version字段
+networks:
+  warm-shop-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  backend-media:
+  backend-static:
+
+services:
+  # 1. MySQL数据库
+  mysql:
+    image: mysql:5.7
+    container_name: warm-shop-mysql
+    restart: always
+    networks:
+      - warm-shop-network
+    volumes:
+      - mysql-data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=WarmShop@123
+      - MYSQL_DATABASE=warm_shop
+      - MYSQL_USER=warm_shop_user
+      - MYSQL_PASSWORD=WarmShopUser@123
+    ports:
+      - "3307:3306"
+    command:
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-time-zone='+8:00'
+
+  # 2. Django后端（删除健康检查，仅依赖mysql启动）
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: warm-shop-backend
+    restart: always
+    networks:
+      - warm-shop-network
+    volumes:
+      - backend-media:/app/media
+      - backend-static:/app/staticfiles
+    environment:
+      - DB_HOST=mysql
+      - DB_NAME=warm_shop
+      - DB_USER=warm_shop_user
+      - DB_PASSWORD=WarmShopUser@123
+      - DB_PORT=3306
+      - DJANGO_SECRET_KEY=django-insecure-89$7&z=^%6@8x!09s7^&*()_+lkjhgfdsazxcvbnm
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=*
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mysql  # 仅保证mysql先启动，不检查健康状态
+
+  # 3. Vue前端（仅依赖backend启动）
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: warm-shop-frontend
+    restart: always
+    networks:
+      - warm-shop-network
+    ports:
+      - "8080:80"
+    environment:
+      - VITE_API_BASE_URL=http://backend:8000/api
+    depends_on:
+      - backend  # 仅保证backend先启动，不检查健康状态

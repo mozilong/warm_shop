@@ -1,0 +1,107 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | 暖心商城管理后台{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        <img src="/media/logo/logo.png" 
+             style="width:30px; height:30px; border-radius:50%; margin-right:8px; object-fit:cover;" 
+             alt="暖心商城Logo">
+        暖心商城管理后台
+    </a>
+</h1>
+{% endblock %}
+
+{% block extrastyle %}
+<style>
+    /* 隐藏面包屑 */
+    .breadcrumbs {
+        display: none !important;
+    }
+
+    /* 顶部导航栏 */
+    #header {
+        background: #e6436d !important;
+        color: #fff !important;
+        box-shadow: 0 2px 8px rgba(255, 140, 170, 0.2);
+    }
+    #header a:link, #header a:visited {
+        color: #fff !important;
+    }
+
+    /* 侧边栏与模块标题 */
+    .module h2, .module caption, .inline-group h2 {
+        background: #e6436d !important;
+        color: #fff !important;
+    }
+    .module {
+        border: 1px solid #ff8ca8 !important;
+    }
+
+    /* 侧边栏链接 */
+    .sidebar {
+        background: #fff5f8 !important;
+    }
+    .sidebar .nav-sidebar .nav-link {
+        color: #e6436d !important;
+    }
+    .sidebar .nav-sidebar .nav-link:hover {
+        background: #ff8ca8 !important;
+        color: #fff !important;
+    }
+
+    /* 按钮与操作图标 */
+    .button, input[type=submit] {
+        background: #e6436d !important;
+        color: #fff !important;
+        border: none !important;
+    }
+    .button:hover {
+        background: #d42858 !important;
+    }
+    .addlink, .changelink {
+        color: #e6436d !important;
+    }
+    .deletelink {
+        color: #e6436d !important;
+    }
+
+    /* 列表与表格 */
+    .change-list .filtered {
+        border-right: 1px solid #ff8ca8 !important;
+    }
+    .table thead th {
+        background: #ff8ca8 !important;
+        color: #fff !important;
+    }
+    .row1 {
+        background: #fff5f8 !important;
+    }
+    .row2 {
+        background: #fff !important;
+    }
+
+    /* 分页 */
+    .pagination .page-link {
+        color: #e6436d !important;
+        border-color: #ff8ca8 !important;
+    }
+    .pagination .page-item.active .page-link {
+        background: #e6436d !important;
+        border-color: #e6436d !important;
+    }
+
+    /* 最近动作区域 */
+    .recent-actions-module {
+        border-color: #ff8ca8 !important;
+    }
+    .recent-actions-module h2 {
+        background: #e6436d !important;
+        color: #fff !important;
+    }
+</style>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

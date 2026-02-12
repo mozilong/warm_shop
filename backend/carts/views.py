@@ -1,64 +1,72 @@
-from rest_framework import viewsets, status
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from .models import Cart
-from .serializers import CartSerializer, CartUpdateSerializer
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from carts.models import Cart
 from goods.models import Goods
 
-class CartViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
-    serializer_class = CartSerializer
+@login_required
+def cart_add(request, goods_id):
+    """添加商品到购物车"""
+    goods = get_object_or_404(Goods, id=goods_id, status='ON_SALE')
+    # 检查库存
+    if goods.stock <= 0:
+        messages.error(request, '该商品已售罄！')
+        return redirect('goods_detail', goods_id=goods_id)
+    
+    # 检查是否已在购物车
+    cart_item, created = Cart.objects.get_or_create(
+        user=request.user,
+        goods=goods,
+        defaults={'quantity': 1}
+    )
+    if not created:
+        # 已存在则数量+1
+        cart_item.quantity += 1
+        # 不超过库存
+        if cart_item.quantity > goods.stock:
+            cart_item.quantity = goods.stock
+            messages.warning(request, f'购物车数量已达库存上限（{goods.stock}件）！')
+        cart_item.save()
+    
+    messages.success(request, '商品已加入购物车！')
+    return redirect('cart_list')
 
-    def get_queryset(self):
-        """只返回当前用户的购物车数据"""
-        return Cart.objects.filter(user=self.request.user).select_related('goods')
+@login_required
+def cart_list(request):
+    """购物车列表：编辑/删除"""
+    cart_items = Cart.objects.filter(user=request.user)
+    # 计算总价
+    total_price = sum(item.goods.price * item.quantity for item in cart_items)
+    
+    return render(request, 'cart.html', {
+        'cart_items': cart_items,
+        'total_price': total_price,
+        'categories': GoodsCategory.objects.all()
+    })
 
-    def get_serializer_class(self):
-        """更新时使用简化序列化器"""
-        if self.action in ['update', 'partial_update']:
-            return CartUpdateSerializer
-        return CartSerializer
+@login_required
+def cart_delete(request, cart_id):
+    """删除购物车商品"""
+    cart_item = get_object_or_404(Cart, id=cart_id, user=request.user)
+    cart_item.delete()
+    messages.success(request, '已移除该商品！')
+    return redirect('cart_list')
 
-    def create(self, request, *args, **kwargs):
-        """创建购物车（已存在则更新数量）"""
-        goods_id = request.data.get('goods_id')
-        quantity = int(request.data.get('quantity', 1))
-
-        # 验证商品是否存在且库存充足
-        try:
-            goods = Goods.objects.get(id=goods_id, is_active=True)
-        except Goods.DoesNotExist:
-            return Response({
-                'code': 404,
-                'message': '商品不存在'
-            }, status=status.HTTP_404_NOT_FOUND)
+@login_required
+def cart_update(request, cart_id):
+    """更新购物车商品数量"""
+    cart_item = get_object_or_404(Cart, id=cart_id, user=request.user)
+    if request.method == 'POST':
+        quantity = int(request.POST.get('quantity', 1))
+        # 验证数量
+        if quantity < 1:
+            quantity = 1
+        elif quantity > cart_item.goods.stock:
+            quantity = cart_item.goods.stock
+            messages.warning(request, f'数量已达库存上限（{cart_item.goods.stock}件）！')
         
-        if goods.stock < quantity:
-            return Response({
-                'code': 400,
-                'message': '库存不足'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # 查找或创建购物车记录
-        cart, created = Cart.objects.get_or_create(
-            user=request.user,
-            goods=goods,
-            defaults={'quantity': quantity}
-        )
-
-        # 已存在则累加数量
-        if not created:
-            cart.quantity += quantity
-            if cart.quantity > goods.stock:
-                return Response({
-                    'code': 400,
-                    'message': '库存不足'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            cart.save()
-
-        serializer = self.get_serializer(cart)
-        return Response({
-            'code': 201 if created else 200,
-            'message': '添加成功' if created else '更新成功',
-            'data': serializer.data
-        }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+        cart_item.quantity = quantity
+        cart_item.save()
+        messages.success(request, '购物车已更新！')
+    
+    return redirect('cart_list')

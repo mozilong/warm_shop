@@ -1,15 +1,16 @@
-"""warm_shop URL Configuration"""
 from django.contrib import admin
 from django.urls import path
-from django.conf import settings
-from django.conf.urls.static import static
-
-# 导入首页视图
-from backend.views import home
+# 导入我们写的JSON视图函数（根目录views.py）
+from views import home, category, register, login  
 
 urlpatterns = [
-    # 根路径（首页）
-    path('', home, name='home'),
-    # 后台管理
     path('admin/', admin.site.urls),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # 媒体文件访问路由
+    # 核心：/register/ 指向我们写的register视图（返回JSON）
+    path('register/', register),
+    # 核心：/login/ 指向我们写的login视图（返回JSON）
+    path('login/', login),
+    # 其他原有路由（可保留）
+    path('', home),
+    path('category/', category),
+    # 重点：删除所有其他指向模板注册页面的路由（如auth的register路由）
+]
