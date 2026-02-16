@@ -4,7 +4,7 @@ import createPersistedState from "vuex-persistedstate";
 
 const store = createStore({
     state: {
-        lookImgUrl: 'http://127.0.0.1:8888',
+        lookImgUrl: 'http://192.168.5.133:8888',
         username: '',
         last_login: ''
     },
